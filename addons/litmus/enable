@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+set -e
+
+source $SNAP/actions/common/utils.sh
+
+# Variables
+VERSION="master"
+SCOPE="cluster"
+
+echo "Enabling Litmuschaos"
+
+KUBECTL="$SNAP/microk8s-kubectl.wrapper"
+"$SNAP/microk8s-enable.wrapper" dns
+
+# Waiting for the apiserver to start
+sleep 5
+${SNAP}/microk8s-status.wrapper --wait-ready --timeout 30 >/dev/null
+
+ARGS=()
+
+# Check for arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --scope)
+      read -ra SCOPE <<< "$2"
+      shift
+      shift
+      ;;
+    -v|--version)
+      read -ra VERSION <<< "$2"
+      shift
+      shift
+      ;;
+    -*|--*)
+      echo "Unknown option $1"
+      exit 1
+      ;;
+    *)
+      ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+echo "${ARGS[@]}"
+echo "${NAMESPACE}"
+echo "${VERSION}"
+
+# if [ ! -z "${ARGS[@]}" ]
+# then
+#   NAMESPACE=${ARGUMENTS[0]}
+#   $KUBECTL create ns "${NAMESPACE}" || true
+#   sed "s/namespace: default/namespace: ${NAMESPACE}/g; \
+#        s/default\.svc/${NAMESPACE}\.svc/g;\
+#        s/default\/jaeger-operator-serving-cert/${NAMESPACE}\/jaeger-operator-serving-cert/g" $MANIFESTS_PATH/operator.yaml |\
+#        $KUBECTL apply -f -
+# else
+#   $KUBECTL apply -f "${MANIFESTS_PATH}/operator.yaml"
+# fi
