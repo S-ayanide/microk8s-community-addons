@@ -12,10 +12,9 @@ microk8s-addons:
     - name: "litmus"
       description: "Litmus"
       version: "1.0.0"
-      check_status: "deploy/subscriber"
+      check_status: "deployment.apps/subscriber"
       supported_architectures:
         - arm64
-        - amd64
 
     - name: "istio"
       description: "Core Istio service mesh services"
