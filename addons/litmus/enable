@@ -8,16 +8,12 @@ source $SNAP/actions/common/utils.sh
 VERSION="master"
 SCOPE="cluster"
 
-echo "Enabling Litmuschaos"
-
 KUBECTL="$SNAP/microk8s-kubectl.wrapper"
 "$SNAP/microk8s-enable.wrapper" dns
 
 # Waiting for the apiserver to start
 sleep 5
 ${SNAP}/microk8s-status.wrapper --wait-ready --timeout 30 >/dev/null
-
-ARGS=()
 
 # Check for arguments
 while [[ $# -gt 0 ]]; do
@@ -36,25 +32,31 @@ while [[ $# -gt 0 ]]; do
       echo "Unknown option $1"
       exit 1
       ;;
-    *)
-      ARGS+=("$1")
-      shift
-      ;;
   esac
 done
 
-echo "${ARGS[@]}"
-echo "${NAMESPACE}"
-echo "${VERSION}"
+echo "Enabling Litmuschaos"
 
-# if [ ! -z "${ARGS[@]}" ]
-# then
-#   NAMESPACE=${ARGUMENTS[0]}
-#   $KUBECTL create ns "${NAMESPACE}" || true
-#   sed "s/namespace: default/namespace: ${NAMESPACE}/g; \
-#        s/default\.svc/${NAMESPACE}\.svc/g;\
-#        s/default\/jaeger-operator-serving-cert/${NAMESPACE}\/jaeger-operator-serving-cert/g" $MANIFESTS_PATH/operator.yaml |\
-#        $KUBECTL apply -f -
-# else
-#   $KUBECTL apply -f "${MANIFESTS_PATH}/operator.yaml"
-# fi
+if [ "${VERSION}" == "master" ] && [ "${SCOPE}" == "cluster" ]
+then
+  $KUBECTL apply -f "https://raw.githubusercontent.com/litmuschaos/litmus/master/litmus-portal/manifests/cluster-k8s-manifest.yml"
+elif [ "${VERSION}" == "master" ] && [ "${SCOPE}" != "cluster" ]
+then
+  $KUBECTL create ns litmus
+  #Install CRDs, if SELF_AGENT env is set to TRUE
+  $KUBECTL apply -f https://raw.githubusercontent.com/litmuschaos/litmus/master/litmus-portal/manifests/litmus-portal-crds.yml
+  #Install ChaosCenter
+  $KUBECTL apply -f https://raw.githubusercontent.com/litmuschaos/litmus/master/litmus-portal/manifests/namespace-k8s-manifest.yml -n litmus
+elif [ "${VERSION}" != "master" ] && [ "${SCOPE}" == "cluster" ]
+then
+  $KUBECTL apply -f "https://raw.githubusercontent.com/litmuschaos/litmus/master/mkdocs/docs/${VERSION}/litmus-${VERSION}.yaml"
+elif [ "${VERSION}" != "master" ] && [ "${SCOPE}" != "cluster" ]
+then
+  $KUBECTL create ns litmus
+  #Install CRDs, if SELF_AGENT env is set to TRUE
+  $KUBECTL apply -f "https://raw.githubusercontent.com/litmuschaos/litmus/${VERSION}/litmus-portal/manifests/litmus-portal-crds.yml"
+  #Install ChaosCenter
+  $KUBECTL apply -f "https://raw.githubusercontent.com/litmuschaos/litmus/${VERSION}/litmus-portal/manifests/namespace-${VERSION}.yml -n litmus"
+fi
+
+echo "Litmus is enabled, please allow sometime before litmus starts up"
