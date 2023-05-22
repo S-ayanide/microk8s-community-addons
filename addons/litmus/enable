@@ -23,11 +23,6 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
-    -v|--version)
-      read -ra VERSION <<< "$2"
-      shift
-      shift
-      ;;
     -*|--*)
       echo "Unknown option $1"
       exit 1
@@ -35,28 +30,27 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo "Enabling Litmuschaos"
+echo "Enabling Litmuschaos..."
 
-if [ "${VERSION}" == "master" ] && [ "${SCOPE}" == "cluster" ]
+if [ "${SCOPE}" == "cluster" ]
 then
-  $KUBECTL apply -f "https://raw.githubusercontent.com/litmuschaos/litmus/master/litmus-portal/manifests/cluster-k8s-manifest.yml"
-elif [ "${VERSION}" == "master" ] && [ "${SCOPE}" != "cluster" ]
-then
-  $KUBECTL create ns litmus
-  #Install CRDs, if SELF_AGENT env is set to TRUE
-  $KUBECTL apply -f https://raw.githubusercontent.com/litmuschaos/litmus/master/litmus-portal/manifests/litmus-portal-crds.yml
-  #Install ChaosCenter
-  $KUBECTL apply -f https://raw.githubusercontent.com/litmuschaos/litmus/master/litmus-portal/manifests/namespace-k8s-manifest.yml -n litmus
-elif [ "${VERSION}" != "master" ] && [ "${SCOPE}" == "cluster" ]
-then
-  $KUBECTL apply -f "https://raw.githubusercontent.com/litmuschaos/litmus/master/mkdocs/docs/${VERSION}/litmus-${VERSION}.yaml"
-elif [ "${VERSION}" != "master" ] && [ "${SCOPE}" != "cluster" ]
+  $KUBECTL apply -f ./litmus/cluster-k8s-manifest.yml
+else
 then
   $KUBECTL create ns litmus
   #Install CRDs, if SELF_AGENT env is set to TRUE
-  $KUBECTL apply -f "https://raw.githubusercontent.com/litmuschaos/litmus/${VERSION}/litmus-portal/manifests/litmus-portal-crds.yml"
+  $KUBECTL apply -f ./litmus/litmus-portal-crds.yml
   #Install ChaosCenter
-  $KUBECTL apply -f "https://raw.githubusercontent.com/litmuschaos/litmus/${VERSION}/litmus-portal/manifests/namespace-${VERSION}.yml -n litmus"
+  $KUBECTL apply -f ./litmus/namespace-k8s-manifest.yml -n litmus
 fi
 
-echo "Litmus is enabled, please allow sometime before litmus starts up"
+echo """
+  _     _ _                            _                     
+ | |   (_) |_ _ __ ___  _   _ ___  ___| |__   __ _  ___  ___ 
+ | |   | | __| '_ ` _ \| | | / __|/ __| '_ \ / _` |/ _ \/ __|
+ | |___| | |_| | | | | | |_| \__ \ (__| | | | (_| | (_) \__ \
+ |_____|_|\__|_| |_| |_|\__,_|___/\___|_| |_|\__,_|\___/|___/
+
+ Litmus is enabled. Happy hacking.
+ 
+"""
